@@ -1,0 +1,12 @@
+services:
+  fnos-frpc:
+    build: .
+    image: fnos-frpc-gui:latest
+    container_name: fnos-frpc
+    network_mode: host
+    volumes:
+      - ./data:/app/data
+    environment:
+      - WEB_PORT=7500
+      - TZ=Asia/Shanghai
+    restart: unless-stopped

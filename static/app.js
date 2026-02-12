@@ -4,6 +4,7 @@ let servers = [];
 let selectedServerId = null;
 let editingServerId = null;
 let editingProxyId = null;
+let frpcInstalled = false;
 
 // === API Helper ===
 async function api(method, path, body = null) {
@@ -56,9 +57,25 @@ async function init() {
         const status = await api('GET', '/auth/status');
         if (status.needSetup) {
             showPage('setup-page');
-        } else {
-            showPage('login-page');
+            return;
         }
+
+        // Try restoring saved session
+        const savedToken = localStorage.getItem('authToken');
+        if (savedToken) {
+            authToken = savedToken;
+            try {
+                await api('GET', '/servers');
+                enterApp();
+                return;
+            } catch (e) {
+                // Token expired or invalid
+                authToken = '';
+                localStorage.removeItem('authToken');
+            }
+        }
+
+        showPage('login-page');
     } catch (e) {
         toast('无法连接到服务器', 'error');
     }
@@ -85,6 +102,7 @@ document.getElementById('setup-form').addEventListener('submit', async (e) => {
     try {
         const res = await api('POST', '/auth/setup', { password: pw });
         authToken = res.token;
+        localStorage.setItem('authToken', authToken);
         toast('密码设置成功', 'success');
         enterApp();
     } catch (e) {
@@ -102,6 +120,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     try {
         const res = await api('POST', '/auth/login', { password: pw });
         authToken = res.token;
+        localStorage.setItem('authToken', authToken);
         enterApp();
     } catch (e) {
         errEl.textContent = '密码错误';
@@ -113,14 +132,21 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 async function enterApp() {
     showPage('main-page');
     await loadServers();
-    checkFrpcVersion();
+    await checkFrpcVersion();
+
+    // Auto-open version modal if frpc not installed
+    if (!frpcInstalled) {
+        document.getElementById('btn-frpc-manage').click();
+    }
 }
 
 // === Logout ===
 document.getElementById('btn-logout').addEventListener('click', () => {
     authToken = '';
+    localStorage.removeItem('authToken');
     selectedServerId = null;
     showPage('login-page');
+    toast('\u5df2\u9000\u51fa\u767b\u5f55', 'info');
 });
 
 // === Load Servers ===
@@ -469,12 +495,33 @@ async function checkFrpcVersion() {
         if (data.installed) {
             text.textContent = `frpc ${data.version}`;
             badge.querySelector('.dot').className = 'dot dot-green';
+            frpcInstalled = true;
         } else {
             text.textContent = 'frpc 未安装';
             badge.querySelector('.dot').className = 'dot dot-red';
+            frpcInstalled = false;
         }
     } catch (e) {
         document.getElementById('frpc-version-text').textContent = '检测失败';
+    }
+}
+
+// === Close Version Modal with Reminder ===
+function closeVersionModal() {
+    closeModal('modal-version');
+
+    // If frpc is still not installed, show reminder tooltip
+    if (!frpcInstalled) {
+        const tooltip = document.getElementById('frpc-tooltip');
+        const manageBtn = document.getElementById('btn-frpc-manage');
+        tooltip.classList.remove('hidden');
+        manageBtn.classList.add('pulse-glow');
+
+        // Auto-dismiss after 6 seconds
+        setTimeout(() => {
+            tooltip.classList.add('hidden');
+            manageBtn.classList.remove('pulse-glow');
+        }, 6000);
     }
 }
 
@@ -608,5 +655,59 @@ setInterval(async () => {
     }
 }, 10000);
 
+// === Theme Management ===
+function getAutoTheme() {
+    // 1. Check system preference
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+        return 'light';
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+    }
+    // 2. Fallback: time-based (6:00-18:00 = light)
+    const hour = new Date().getHours();
+    return (hour >= 6 && hour < 18) ? 'light' : 'dark';
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    updateThemeIcon(theme);
+}
+
+function updateThemeIcon(theme) {
+    const icon = document.getElementById('theme-icon');
+    if (!icon) return;
+    if (theme === 'light') {
+        // Sun icon
+        icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+    } else {
+        // Moon icon
+        icon.innerHTML = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+    }
+}
+
+// Initialize theme immediately
+(function () {
+    const saved = localStorage.getItem('theme');
+    const theme = saved || getAutoTheme();
+    applyTheme(theme);
+})();
+
+// Theme toggle button
+document.getElementById('btn-theme-toggle').addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', next);
+    applyTheme(next);
+});
+
+// Listen for system theme changes
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (!localStorage.getItem('theme')) {
+        applyTheme(e.matches ? 'dark' : 'light');
+    }
+});
+
 // === Start ===
 init();
+

@@ -8,7 +8,7 @@ echo ============================================
 echo.
 
 set PROJECT_DIR=%~dp0
-set OUTPUT_DIR=%PROJECT_DIR%dist
+set OUTPUT_DIR=%PROJECT_DIR%docker-out
 set IMAGE_NAME=fnos-frpc-gui
 set IMAGE_TAG=latest
 
@@ -73,7 +73,7 @@ echo ============================================
 echo   打包完成！输出文件位于:
 echo   %OUTPUT_DIR%
 echo.
-echo   dist/
+echo   docker-out/
 echo     ├── fnos-frpc-gui.tar    (Docker 镜像)
 echo     └── docker-compose.yml   (部署配置)
 echo.
