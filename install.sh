@@ -66,10 +66,26 @@ fi
 DOWNLOAD_URL="https://github.com/$REPO/releases/download/$LATEST_TAG/fnos-frpc-gui-$ARCH_NAME"
 STEP=$( [ "$IS_UPGRADE" = true ] && echo "3/4" || echo "2/4" )
 echo "[$STEP] 下载 fnos-frpc-gui-$ARCH_NAME ..."
+
 mkdir -p "$INSTALL_DIR/data"
-curl -fsSL "$DOWNLOAD_URL" -o "$INSTALL_DIR/fnos-frpc-gui"
-chmod +x "$INSTALL_DIR/fnos-frpc-gui"
-echo "      下载完成 ✓"
+TMP_FILE="/tmp/fnos-frpc-gui.new"
+
+# 先下载到临时文件，避免覆盖正在运行的文件导致错误
+if curl -fsSL "$DOWNLOAD_URL" -o "$TMP_FILE"; then
+    chmod +x "$TMP_FILE"
+    
+    # 停止服务确保文件可以被替换
+    if [ "$IS_UPGRADE" = true ]; then
+        systemctl stop $SERVICE_NAME 2>/dev/null || true
+    fi
+    
+    mv -f "$TMP_FILE" "$INSTALL_DIR/fnos-frpc-gui"
+    echo "      下载完成 ✓"
+else
+    echo "❌ 下载失败！"
+    rm -f "$TMP_FILE"
+    exit 1
+fi
 
 # ---- 创建 systemd 服务 ----
 STEP=$( [ "$IS_UPGRADE" = true ] && echo "3/4" || echo "3/4" )
