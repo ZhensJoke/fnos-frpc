@@ -378,7 +378,7 @@ document.getElementById('btn-toggle-server').addEventListener('click', async () 
 // === Proxy CRUD ===
 document.getElementById('btn-add-proxy').addEventListener('click', () => {
     editingProxyId = null;
-    document.getElementById('modal-proxy-title').textContent = '添加代理规则';
+    document.getElementById('modal-proxy-title').textContent = '添加规则';
     document.getElementById('proxy-form').reset();
     document.getElementById('pf-local-ip').value = '127.0.0.1';
     document.getElementById('pf-type').value = 'tcp';
@@ -409,7 +409,7 @@ function editProxy(proxyId) {
     if (!proxy) return;
 
     editingProxyId = proxyId;
-    document.getElementById('modal-proxy-title').textContent = '编辑代理规则';
+    document.getElementById('modal-proxy-title').textContent = '编辑规则';
     document.getElementById('pf-name').value = proxy.name;
     document.getElementById('pf-type').value = proxy.type;
     document.getElementById('pf-local-ip').value = proxy.localIP || '127.0.0.1';
@@ -422,10 +422,10 @@ function editProxy(proxyId) {
 }
 
 async function deleteProxy(proxyId) {
-    if (!confirm('确定删除此代理规则吗？')) return;
+    if (!confirm('确定删除此规则吗？')) return;
     try {
         await api('DELETE', `/servers/${selectedServerId}/proxies/${proxyId}`);
-        toast('代理规则已删除', 'success');
+        toast('规则已删除', 'success');
         await loadServers();
         renderServerDetail();
     } catch (e) {
@@ -457,10 +457,10 @@ document.getElementById('proxy-form').addEventListener('submit', async (e) => {
     try {
         if (editingProxyId) {
             await api('PUT', `/servers/${selectedServerId}/proxies/${editingProxyId}`, data);
-            toast('代理规则已更新', 'success');
+            toast('规则已更新', 'success');
         } else {
             await api('POST', `/servers/${selectedServerId}/proxies`, data);
-            toast('代理规则已添加', 'success');
+            toast('规则已添加', 'success');
         }
         closeModal('modal-proxy');
         await loadServers();
