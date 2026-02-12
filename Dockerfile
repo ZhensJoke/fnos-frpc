@@ -13,11 +13,8 @@ RUN apk add --no-cache ca-certificates tzdata
 
 WORKDIR /app
 
-# Copy binary
+# Copy binary (static files are embedded via go:embed)
 COPY --from=builder /src/fnos-frpc-gui .
-
-# Copy frontend static files
-COPY static/ ./static/
 
 # Data volume
 VOLUME /app/data

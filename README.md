@@ -9,92 +9,74 @@
 - 🔄 支持 TCP/UDP/HTTP/HTTPS 代理类型
 - 📦 frpc 在线安装（GitHub）和离线上传安装
 - 🔒 首次使用设置管理密码
-- 🐳 Docker 部署，host 网络模式
-
-## 前置条件
-
-- 一台安装了 fnOS 的 NAS（或任何支持 Docker 的 Linux 设备）
-- NAS 已启用 Docker 功能
-- 一台 Windows 电脑（用于编译打包，需安装 [Go](https://go.dev/dl/) 和 [Docker Desktop](https://www.docker.com/products/docker-desktop/)）
+- 🐳 支持 Docker 部署 / 直接运行
+- 💻 支持 Linux amd64 / arm64 / Windows 多平台
 
 ---
 
-## 完整部署教程
+## 快速安装
 
-### 第一步：在 Windows 上打包
+### 方式一：一键安装（推荐）
 
-1. **克隆项目**
+SSH 登录飞牛NAS 后，执行以下命令即可自动下载并启动：
 
 ```bash
-git clone https://github.com/ZhensJoke/fnos-frpc.git
-cd fnos-frpc
+curl -fsSL https://raw.githubusercontent.com/ZhensJoke/fnos-frpc/main/install.sh | bash
 ```
 
-2. **一键打包**
+脚本会自动完成：检测架构 → 下载最新版 → 创建系统服务 → 启动。
 
-确保 Docker Desktop 已启动，然后双击运行 `build.bat`。
+> 💡 自定义端口：`WEB_PORT=8080 curl -fsSL https://raw.githubusercontent.com/ZhensJoke/fnos-frpc/main/install.sh | bash`
 
-脚本会自动完成：交叉编译 → 构建 Docker 镜像 → 导出为 `dist/fnos-frpc-gui.tar`。
+### 方式二：Docker 部署
 
-打包完成后，`dist/` 目录下会有两个文件：
+**1. 拉取镜像并运行：**
 
+```bash
+mkdir -p /vol1/docker/fnos-frpc && cd /vol1/docker/fnos-frpc
+
+# 下载 docker-compose.yml
+curl -fsSL https://raw.githubusercontent.com/ZhensJoke/fnos-frpc/main/docker-compose.yml -o docker-compose.yml
+
+# 启动
+docker compose up -d
 ```
-dist/
-├── fnos-frpc-gui.tar    # Docker 镜像（~30MB）
-└── docker-compose.yml   # 部署配置文件
+
+**2. 或使用 docker run：**
+
+```bash
+docker run -d \
+  --name fnos-frpc \
+  --network host \
+  -v ./data:/app/data \
+  -e WEB_PORT=7500 \
+  -e TZ=Asia/Shanghai \
+  --restart unless-stopped \
+  fnos-frpc-gui:latest
 ```
 
-### 第二步：上传文件到 NAS
+### 方式三：手动下载二进制
 
-将以下文件上传到 NAS 的同一个目录中（如 `/vol1/docker/frpc-gui/`）：
+从 [Releases](https://github.com/ZhensJoke/fnos-frpc/releases) 页面下载对应平台的文件：
 
-| 文件 | 来源 |
+| 文件 | 平台 |
 |------|------|
-| `fnos-frpc-gui.tar` | `dist/` 目录 |
-| `docker-compose.yml` | `dist/` 目录 |
-| `deploy.sh` | 项目根目录 |
+| `fnos-frpc-gui-linux-amd64` | Linux x86_64（大多数 NAS） |
+| `fnos-frpc-gui-linux-arm64` | Linux ARM64（树莓派等） |
+| `fnos-frpc-gui-windows-amd64.exe` | Windows x64 |
 
-上传方式（任选其一）：
-- **fnOS 文件管理器**：在 Web 界面中上传文件
-- **SMB 共享**：通过 Windows 资源管理器拖拽到 NAS 共享文件夹
-- **SCP 命令**：
-  ```bash
-  scp dist/fnos-frpc-gui.tar dist/docker-compose.yml deploy.sh user@NAS-IP:/vol1/docker/frpc-gui/
-  ```
-
-### 第三步：SSH 到 NAS 执行部署
-
-1. **SSH 连接 NAS**
+下载后直接运行：
 
 ```bash
-ssh user@NAS-IP
+chmod +x fnos-frpc-gui-linux-amd64
+DATA_DIR=./data WEB_PORT=7500 ./fnos-frpc-gui-linux-amd64
 ```
 
-2. **进入文件目录**
+---
 
-```bash
-cd /vol1/docker/frpc-gui/
-```
+## 访问管理界面
 
-3. **运行部署脚本**
-
-```bash
-chmod +x deploy.sh
-./deploy.sh
-```
-
-脚本会自动：导入 Docker 镜像 → 创建数据目录 → 启动容器。
-
-> 如果不使用脚本，也可以手动执行：
-> ```bash
-> docker load -i fnos-frpc-gui.tar
-> mkdir -p data
-> docker compose up -d
-> ```
-
-### 第四步：访问 Web 管理界面
-
-浏览器打开：
+安装完成后，浏览器打开：
 
 ```
 http://NAS-IP:7500
@@ -133,7 +115,7 @@ http://NAS-IP:7500
 **TCP 代理示例（SSH 远程访问）：**
 
 | 字段 | 值 |
-|------|----|
+|------|---|
 | 名称 | `ssh` |
 | 类型 | `TCP` |
 | 本地 IP | `127.0.0.1` |
@@ -143,7 +125,7 @@ http://NAS-IP:7500
 **HTTP 代理示例（NAS Web 界面）：**
 
 | 字段 | 值 |
-|------|----|
+|------|---|
 | 名称 | `nas-web` |
 | 类型 | `HTTP` |
 | 本地 IP | `127.0.0.1` |
@@ -156,23 +138,41 @@ http://NAS-IP:7500
 
 ---
 
-## 自定义端口
+## 服务管理
 
-修改 `docker-compose.yml` 中的 `WEB_PORT` 环境变量：
+一键安装方式下，使用 systemd 管理服务：
 
-```yaml
-environment:
-  - WEB_PORT=8080
+```bash
+# 查看状态
+systemctl status fnos-frpc
+
+# 查看日志
+journalctl -u fnos-frpc -f
+
+# 重启
+systemctl restart fnos-frpc
+
+# 停止
+systemctl stop fnos-frpc
 ```
 
-然后重启容器：
+## 自定义端口
+
+**一键安装方式：** 编辑服务文件中的 `WEB_PORT`：
+```bash
+systemctl edit fnos-frpc
+# 添加: Environment=WEB_PORT=8080
+systemctl restart fnos-frpc
+```
+
+**Docker 方式：** 修改 `docker-compose.yml` 中的 `WEB_PORT` 环境变量，然后重启：
 ```bash
 docker compose down && docker compose up -d
 ```
 
 ## 数据持久化
 
-配置数据保存在 `./data/` 目录中（Docker 卷挂载），包括：
+配置数据保存在 `data/` 目录中，包括：
 
 | 文件/目录 | 内容 |
 |----------|------|
@@ -186,20 +186,52 @@ docker compose down && docker compose up -d
 
 ## 更新升级
 
-1. 在 Windows 上拉取最新代码并重新运行 `build.bat`
-2. 将新的 `fnos-frpc-gui.tar` 上传到 NAS
-3. 在 NAS 上执行：
+**一键安装方式：** 重新执行安装脚本即可：
+```bash
+curl -fsSL https://raw.githubusercontent.com/ZhensJoke/fnos-frpc/main/install.sh | bash
+```
+
+**Docker 方式：**
 ```bash
 docker compose down
-docker load -i fnos-frpc-gui.tar
+docker compose pull
 docker compose up -d
 ```
 
-`data/` 目录中的配置不受影响，会自动保留。
+## 卸载
+
+**一键安装方式：**
+```bash
+systemctl stop fnos-frpc
+systemctl disable fnos-frpc
+rm -rf /opt/fnos-frpc /etc/systemd/system/fnos-frpc.service
+systemctl daemon-reload
+```
+
+**Docker 方式：**
+```bash
+docker compose down
+```
 
 ## 技术栈
 
-- 后端：Go（零外部依赖，仅标准库）
+- 后端：Go（零外部依赖，仅标准库，静态资源内嵌）
 - 前端：HTML/CSS/JS（无框架）
+- 支持平台：Linux amd64 / arm64、Windows amd64
 - Docker 镜像：~30MB（Alpine 基础）
 - 网络模式：`host`（容器直接访问 NAS 所有本地服务）
+
+## 开发者
+
+### 从源码编译
+
+```bash
+git clone https://github.com/ZhensJoke/fnos-frpc.git
+cd fnos-frpc
+
+# 全平台编译（Windows 下双击运行）
+buildall.bat
+
+# 仅编译 Docker 镜像
+build.bat
+```
