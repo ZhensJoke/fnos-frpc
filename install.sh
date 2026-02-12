@@ -40,16 +40,40 @@ if [ -z "$LATEST_TAG" ]; then
 fi
 echo "      最新版本: $LATEST_TAG"
 
+# ---- 检测已有安装 ----
+IS_UPGRADE=false
+OLD_VERSION=""
+if [ -f "$INSTALL_DIR/fnos-frpc-gui" ]; then
+    IS_UPGRADE=true
+    # 尝试获取旧版本号
+    if systemctl is-active --quiet $SERVICE_NAME 2>/dev/null; then
+        OLD_VERSION="(正在运行)"
+    fi
+    echo ""
+    echo "  ⚡ 检测到已安装的版本，将保留数据并升级"
+    echo "     数据目录 $INSTALL_DIR/data/ 不会被删除"
+    echo ""
+
+    # 停止旧服务
+    echo "[2/4] 停止旧版本服务..."
+    systemctl stop $SERVICE_NAME 2>/dev/null || true
+    echo "      已停止 ✓"
+else
+    echo ""
+fi
+
 # ---- 下载二进制文件 ----
 DOWNLOAD_URL="https://github.com/$REPO/releases/download/$LATEST_TAG/fnos-frpc-gui-$ARCH_NAME"
-echo "[2/4] 下载 fnos-frpc-gui-$ARCH_NAME ..."
+STEP=$( [ "$IS_UPGRADE" = true ] && echo "3/4" || echo "2/4" )
+echo "[$STEP] 下载 fnos-frpc-gui-$ARCH_NAME ..."
 mkdir -p "$INSTALL_DIR/data"
 curl -fsSL "$DOWNLOAD_URL" -o "$INSTALL_DIR/fnos-frpc-gui"
 chmod +x "$INSTALL_DIR/fnos-frpc-gui"
 echo "      下载完成 ✓"
 
 # ---- 创建 systemd 服务 ----
-echo "[3/4] 创建系统服务..."
+STEP=$( [ "$IS_UPGRADE" = true ] && echo "3/4" || echo "3/4" )
+echo "[$STEP] 创建系统服务..."
 cat > /etc/systemd/system/$SERVICE_NAME.service << EOF
 [Unit]
 Description=FNOS FRP GUI Manager
@@ -81,7 +105,12 @@ if systemctl is-active --quiet $SERVICE_NAME; then
     echo "      服务启动成功 ✓"
     echo ""
     echo "============================================"
-    echo "  ✅ 安装完成！"
+    if [ "$IS_UPGRADE" = true ]; then
+        echo "  ✅ 升级完成！版本: $LATEST_TAG"
+        echo "     数据已保留，无需重新配置"
+    else
+        echo "  ✅ 安装完成！版本: $LATEST_TAG"
+    fi
     echo ""
     echo "  访问地址: http://$(hostname -I | awk '{print $1}'):$PORT"
     echo ""
