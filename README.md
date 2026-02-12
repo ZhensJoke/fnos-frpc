@@ -26,8 +26,8 @@
 1. **克隆项目**
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/fnos-frpc-gui.git
-cd fnos-frpc-gui
+git clone https://github.com/ZhensJoke/fnos-frpc.git
+cd fnos-frpc
 ```
 
 2. **一键打包**
