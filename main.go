@@ -1,11 +1,16 @@
 package main
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
 )
+
+//go:embed static/*
+var staticFiles embed.FS
 
 func main() {
 	port := os.Getenv("WEB_PORT")
@@ -61,8 +66,12 @@ func main() {
 	mux.Handle("POST /api/frpc/install", authMgr.Middleware(http.HandlerFunc(handler.FrpcInstall)))
 	mux.Handle("POST /api/frpc/upload", authMgr.Middleware(http.HandlerFunc(handler.FrpcUpload)))
 
-	// Static files
-	mux.Handle("/", http.FileServer(http.Dir("static")))
+	// Static files (embedded in binary)
+	staticSub, err := fs.Sub(staticFiles, "static")
+	if err != nil {
+		log.Fatalf("Failed to load embedded static files: %v", err)
+	}
+	mux.Handle("/", http.FileServer(http.FS(staticSub)))
 
 	log.Printf("fnos-frpc-gui starting on port %s", port)
 	log.Printf("Data directory: %s", dataDir)

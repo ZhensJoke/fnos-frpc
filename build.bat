@@ -31,15 +31,13 @@ echo       编译成功 ✓
 
 :: ---- Step 2: 准备 Docker 构建上下文 ----
 echo [2/4] 准备 Docker 构建文件...
-xcopy /s /i /q "%PROJECT_DIR%static" "%OUTPUT_DIR%\static" >nul
 
-:: 生成精简 Dockerfile（无需 Go 编译阶段）
+:: 生成精简 Dockerfile（静态资源已内嵌到二进制中）
 (
 echo FROM alpine:3.19
 echo RUN apk add --no-cache ca-certificates tzdata
 echo WORKDIR /app
 echo COPY fnos-frpc-gui .
-echo COPY static/ ./static/
 echo VOLUME /app/data
 echo ENV WEB_PORT=7500
 echo ENTRYPOINT ["./fnos-frpc-gui"]

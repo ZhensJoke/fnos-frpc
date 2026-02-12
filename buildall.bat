@@ -54,12 +54,6 @@ if %ERRORLEVEL% neq 0 (
 )
 echo       Windows amd64 ✓
 
-:: ---- 复制静态资源 ----
-echo.
-echo 复制静态资源文件...
-xcopy /s /i /q "%PROJECT_DIR%static" "%OUTPUT_DIR%\static" >nul
-echo       静态资源 ✓
-
 :: ---- 完成 ----
 echo.
 echo ============================================
@@ -69,8 +63,9 @@ echo.
 echo   dist/
 echo     ├── %APP_NAME%-linux-amd64       (Linux x86_64)
 echo     ├── %APP_NAME%-linux-arm64       (Linux ARM64)
-echo     ├── %APP_NAME%-windows-amd64.exe (Windows x64)
-echo     └── static/                      (前端资源)
+echo     └── %APP_NAME%-windows-amd64.exe (Windows x64)
+echo.
+echo   静态资源已内嵌到二进制文件中，无需额外文件。
 echo ============================================
 
 pause
