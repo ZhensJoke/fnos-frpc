@@ -1,7 +1,5 @@
 # 编译产物
-fnos-frpc-gui
-fnos-frpc-gui.exe
-*.exe
+
 
 # 打包输出
 
