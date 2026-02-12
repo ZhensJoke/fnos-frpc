@@ -1,6 +1,6 @@
 # FNOS FRP 管理器
 
-基于 Docker 的 FRP 客户端图形化配置工具，专为飞牛NAS (fnOS) 设计。
+FRP 客户端图形化配置工具，支持 Linux x86_64 / ARM64 平台，适用于飞牛NAS (fnOS)、群晖、各类 Linux 服务器等环境，提供 Web UI 管理界面，支持一键脚本安装和 Docker 部署。
 
 ## 功能特性
 
