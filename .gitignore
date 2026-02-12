@@ -1,0 +1,21 @@
+# 编译产物
+fnos-frpc-gui
+fnos-frpc-gui.exe
+*.exe
+
+# 打包输出
+dist/
+
+# 运行时数据（含密码、配置、frpc二进制、日志）
+data/
+testdata/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
