@@ -20,6 +20,7 @@ type ServerConfig struct {
 	AuthMethod string        `json:"authMethod,omitempty"`
 	TLSEnable  bool          `json:"tlsEnable,omitempty"`
 	User       string        `json:"user,omitempty"`
+	AutoStart  *bool         `json:"autoStart"`
 	Proxies    []ProxyConfig `json:"proxies"`
 	CreatedAt  string        `json:"createdAt"`
 	UpdatedAt  string        `json:"updatedAt"`
@@ -101,6 +102,11 @@ func (cm *ConfigManager) CreateServer(cfg ServerConfig) error {
 	cfg.ID = generateID()
 	cfg.CreatedAt = time.Now().Format(time.RFC3339)
 	cfg.UpdatedAt = cfg.CreatedAt
+
+	// Default to auto-start
+	autoStart := true
+	cfg.AutoStart = &autoStart
+
 	if cfg.Proxies == nil {
 		cfg.Proxies = []ProxyConfig{}
 	}

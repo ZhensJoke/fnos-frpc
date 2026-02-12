@@ -73,6 +73,23 @@ func main() {
 	}
 	mux.Handle("/", http.FileServer(http.FS(staticSub)))
 
+	// Auto-start servers
+	servers, err := configMgr.Load()
+	if err != nil {
+		log.Printf("Failed to load servers for auto-start: %v", err)
+	} else {
+		for _, server := range servers {
+			// AutoStart is nil (default) or true -> start
+			if server.AutoStart == nil || *server.AutoStart {
+				log.Printf("Auto-starting server: %s", server.Name)
+				toml := configMgr.GenerateToml(&server)
+				if err := processMgr.Start(server.ID, toml); err != nil {
+					log.Printf("Failed to auto-start server %s: %v", server.Name, err)
+				}
+			}
+		}
+	}
+
 	log.Printf("fnos-frpc-gui starting on port %s", port)
 	log.Printf("Data directory: %s", dataDir)
 	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), mux); err != nil {
